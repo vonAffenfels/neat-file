@@ -119,7 +119,7 @@ module.exports = class Files extends Module {
             }
 
             newFile.save().then(() => {
-                fs.rename(uploadedFileObj.path, Application.config.rootPath + this.config.fileDir + "/" + newFile.filename, (err) => {
+                fs.rename(uploadedFileObj.path, this.fileDir + "/" + newFile.filename, (err) => {
                     if (err) {
                         fs.unlink('./' + uploadedFileObj.path);
                         return reject(err);
