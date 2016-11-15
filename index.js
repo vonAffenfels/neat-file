@@ -236,11 +236,6 @@ module.exports = class Files extends Module {
                 var mimetype = mime.lookup(targetTempPath);
                 var type = this.getTypeFromMimeType(mimetype);
 
-                if (type !== "image") {
-                    this.log.error("Not an image, skipping");
-                    return resolve();
-                }
-
                 try {
                     newFile.set("name", parsedPath.name);
                     newFile.set("originalname", parsedPath.name);
