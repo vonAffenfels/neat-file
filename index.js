@@ -107,29 +107,62 @@ module.exports = class Files extends Module {
         properties = properties || {};
 
         return new Promise((resolve, reject) => {
-            try {
-                var model = Application.modules[this.config.dbModuleName].getModel("file");
-                var newFile = new model({
-                    name: properties.name || uploadedFileObj.originalname,
-                    originalname: uploadedFileObj.originalname,
-                    type: this.getTypeFromMimeType(uploadedFileObj.mimetype),
-                    mimetype: uploadedFileObj.mimetype,
-                    extension: "jpeg"
+            var model = Application.modules[this.config.dbModuleName].getModel("file");
+            var getFileObjectPromise;
+            var originalGetFileObjectPromise = new Promise((resolve, reject) => {
+                try {
+                    resolve(new model({
+                        name: properties.name || uploadedFileObj.originalname,
+                        originalname: uploadedFileObj.originalname,
+                        type: this.getTypeFromMimeType(uploadedFileObj.mimetype),
+                        mimetype: uploadedFileObj.mimetype,
+                        extension: "jpeg"
+                    }));
+                } catch (e) {
+                    this.log.error(e);
+                    return reject(e);
+                }
+            });
+
+            if (req.body._id) {
+                getFileObjectPromise = new Promise((resolve, reject) => {
+                    try {
+                        return model.findOne({
+                            _id: req.body._id
+                        }).then((doc) => {
+
+                            if (!doc) {
+                                return originalGetFileObjectPromise().then(resolve, reject);
+                            }
+
+                            resolve(doc);
+                        }, reject);
+                    } catch (e) {
+                        this.log.error(e);
+                    }
                 });
-            } catch (e) {
-                this.log.error(e);
-                return reject(e);
+            } else {
+                getFileObjectPromise = originalGetFileObjectPromise;
             }
 
-            newFile.save().then(() => {
-                fs.rename(uploadedFileObj.path, this.fileDir + "/" + newFile.filename, (err) => {
-                    if (err) {
-                        fs.unlink('./' + uploadedFileObj.path);
-                        return reject(err);
+            getFileObjectPromise().then((newFile) => {
+                newFile.save().then(() => {
+
+                    try {
+                        fs.unlinkSync(this.fileDir + "/" + newFile.filename);
+                    } catch (e) {
+                        // file existed, we just deleted to make sure it didnt exist, so ignore happens in case of replacements
                     }
 
-                    resolve(newFile);
-                });
+                    fs.rename(uploadedFileObj.path, this.fileDir + "/" + newFile.filename, (err) => {
+                        if (err) {
+                            fs.unlinkSync(uploadedFileObj.path);
+                            return reject(err);
+                        }
+
+                        resolve(newFile);
+                    });
+                }, reject);
             }, reject);
         });
     }
@@ -180,9 +213,12 @@ module.exports = class Files extends Module {
      *
      * @param url
      */
-    importFromUrl(url) {
+    importFromUrl(url, newFile) {
         return new Promise((resolve, reject) => {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
+
+            newFile = newFile || new model();
+
             var hashed = crypto.createHash("md5");
             hashed.update(url);
             hashed = hashed.digest("hex");
@@ -206,13 +242,11 @@ module.exports = class Files extends Module {
                 }
 
                 try {
-                    var newFile = new model({
-                        name: parsedPath.name,
-                        originalname: parsedPath.name,
-                        type: type,
-                        mimetype: mimetype,
-                        extension: parsedPath.ext.substr(1)
-                    });
+                    newFile.set("name", parsedPath.name);
+                    newFile.set("originalname", parsedPath.name);
+                    newFile.set("type", type);
+                    newFile.set("mimetype", mimetype);
+                    newFile.set("extension", parsedPath.ext.substr(1));
                 } catch (e) {
                     this.log.error(e);
                     return reject(e);
@@ -221,10 +255,17 @@ module.exports = class Files extends Module {
                 this.log.debug("Saving File in DB");
                 return newFile.save().then(() => {
                     this.log.debug("Saved, moving file to target location");
+
+                    try {
+                        fs.unlinkSync(this.fileDir + "/" + newFile.filename);
+                    } catch (e) {
+                        // file existed, we just deleted to make sure it didnt exist, so ignore
+                    }
+
                     fs.rename(targetTempPath, this.fileDir + "/" + newFile.filename, (err) => {
                         if (err) {
                             try {
-                                fs.unlink(targetTempPath);
+                                fs.unlinkSync(targetTempPath);
                             } catch (e) {
                                 this.log.error(e);
                             }
@@ -233,7 +274,7 @@ module.exports = class Files extends Module {
                             return reject(err);
                         }
 
-                        this.log.debug("Moved!");
+                        this.log.debug("Moved File to target Location!");
                         resolve(newFile);
                     });
                 }, (err) => {
