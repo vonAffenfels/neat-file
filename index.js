@@ -234,7 +234,7 @@ module.exports = class Files extends Module {
                         }
 
                         this.log.debug("Moved!");
-                        resolve();
+                        resolve(newFile);
                     });
                 }, (err) => {
                     reject(new Error(err.toString()))
