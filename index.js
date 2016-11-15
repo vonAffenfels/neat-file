@@ -172,4 +172,28 @@ module.exports = class Files extends Module {
 
         return "misc";
     }
+
+
+    /**
+     *
+     * @param name
+     * @param schema
+     */
+    modifySchema(name, schema) {
+        if (name === "file") {
+            schema.virtual("filename").get(function () {
+                return this._id + "." + this.extension;
+            });
+
+            schema.virtual("filepath").get(function () {
+                return Application.modules.file.config.fileDir + "/" + this.filename;
+            });
+
+            schema.pre("remove", function (next) {
+                var fullFilePath = Application.config.rootPath + this.filepath;
+                fs.unlink(fullFilePath);
+                next();
+            });
+        }
+    }
 }
