@@ -216,17 +216,21 @@ module.exports = class Files extends Module {
     importFromUrl(url, newFile) {
         return new Promise((resolve, reject) => {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
+            var requestUrl = url;
+            if (typeof url == 'object') {
+                requestUrl = url.url
+            }
 
             newFile = newFile || new model();
 
             var hashed = crypto.createHash("md5");
-            hashed.update(url);
+            hashed.update(requestUrl);
             hashed = hashed.digest("hex");
-            var parsedUrl = queryParser(url);
+            var parsedUrl = queryParser(requestUrl);
             var parsedPath = path.parse(parsedUrl.path);
             var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
-            this.log.debug("Downloading " + url);
+            this.log.debug("Downloading " + requestUrl);
             return request(url).pipe(fs.createWriteStream(targetTempPath)).on('close', (err) => {
                 if (err) {
                     this.log.error(err);
