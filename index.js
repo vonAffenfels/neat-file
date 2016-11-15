@@ -7,6 +7,8 @@ var Tools = require("neat-base").Tools;
 var multer = require('multer');
 var mkdirp = require('mkdirp');
 var fs = require('fs');
+var path = require("path");
+var queryParser = require("url").parse;
 
 var mime = require("mime");
 var request = require('request');
@@ -20,6 +22,7 @@ module.exports = class Files extends Module {
             uploadDir: "/data/uploads",
             fileDir: "/data/files",
             dbModuleName: "database",
+            uploadRoute: "/upload",
             authModuleName: "auth",
             webserverModuleName: "webserver",
             uploadRequiresAuth: true,
@@ -62,7 +65,7 @@ module.exports = class Files extends Module {
              */
             if (Application.modules[this.config.webserverModuleName]) {
                 // upload a single file
-                Application.modules[this.config.webserverModuleName].addRoute("post", "/upload", uploader.single('file'), (req, res) => {
+                Application.modules[this.config.webserverModuleName].addRoute("post", this.config.uploadRoute, uploader.single('file'), (req, res) => {
                     if (!req.file) {
                         res.status(400);
                         return res.end("No file was uploaded");
@@ -114,7 +117,7 @@ module.exports = class Files extends Module {
                     extension: "jpeg"
                 });
             } catch (e) {
-                console.error(e);
+                this.log.error(e);
                 return reject(e);
             }
 
@@ -171,6 +174,73 @@ module.exports = class Files extends Module {
         }
 
         return "misc";
+    }
+
+    /**
+     *
+     * @param url
+     */
+    importFromUrl(url) {
+        return new Promise((resolve, reject) => {
+            var model = Application.modules[this.config.dbModuleName].getModel("file");
+            var hashed = crypto.createHash("md5");
+            hashed.update(url);
+            hashed = hashed.digest("hex");
+            var parsedUrl = queryParser(url);
+            var parsedPath = path.parse(parsedUrl.path);
+            var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
+
+            this.log.debug("Downloading " + url);
+            return request(url).pipe(fs.createWriteStream(targetTempPath)).on('close', (err) => {
+                if (err) {
+                    this.log.error(err);
+                    return reject(new Error(err.toString()));
+                }
+
+                var mimetype = mime.lookup(targetTempPath);
+                var type = this.getTypeFromMimeType(mimetype);
+
+                if (type !== "image") {
+                    this.log.error("Not an image, skipping");
+                    return resolve();
+                }
+
+                try {
+                    var newFile = new model({
+                        name: parsedPath.name,
+                        originalname: parsedPath.name,
+                        type: type,
+                        mimetype: mimetype,
+                        extension: parsedPath.ext.substr(1)
+                    });
+                } catch (e) {
+                    this.log.error(e);
+                    return reject(e);
+                }
+
+                this.log.debug("Saving File in DB");
+                return newFile.save().then(() => {
+                    this.log.debug("Saved, moving file to target location");
+                    fs.rename(targetTempPath, this.fileDir + "/" + newFile.filename, (err) => {
+                        if (err) {
+                            try {
+                                fs.unlink(targetTempPath);
+                            } catch (e) {
+                                this.log.error(e);
+                            }
+
+                            this.log.error(err);
+                            return reject(err);
+                        }
+
+                        this.log.debug("Moved!");
+                        resolve();
+                    });
+                }, (err) => {
+                    reject(new Error(err.toString()))
+                });
+            });
+        });
     }
 
 
