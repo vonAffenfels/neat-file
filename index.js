@@ -145,7 +145,7 @@ module.exports = class Files extends Module {
                 getFileObjectPromise = originalGetFileObjectPromise;
             }
 
-            getFileObjectPromise().then((newFile) => {
+            getFileObjectPromise.then((newFile) => {
                 newFile.save().then(() => {
 
                     try {
