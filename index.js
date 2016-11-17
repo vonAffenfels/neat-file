@@ -146,6 +146,25 @@ module.exports = class Files extends Module {
             }
 
             getFileObjectPromise.then((newFile) => {
+
+                console.log(properties);
+
+                for (var field in properties) {
+                    var value = properties[field];
+
+                    if([
+                            "originalname",
+                            "type",
+                            "mimetype",
+                            "extension"
+                        ].indexOf(field) !== -1) {
+                        continue;
+                    }
+
+                    newFile.set(field, value);
+
+                }
+
                 newFile.save().then(() => {
 
                     try {
