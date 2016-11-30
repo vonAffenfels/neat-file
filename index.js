@@ -116,7 +116,7 @@ module.exports = class Files extends Module {
                         originalname: uploadedFileObj.originalname,
                         type: this.getTypeFromMimeType(uploadedFileObj.mimetype),
                         mimetype: uploadedFileObj.mimetype,
-                        extension: "jpeg"
+                        extension: this.getExtensionFromMimeType(uploadedFileObj.mimetype)
                     }));
                 } catch (e) {
                     this.log.error(e);
@@ -146,8 +146,6 @@ module.exports = class Files extends Module {
             }
 
             getFileObjectPromise.then((newFile) => {
-
-                console.log(properties);
 
                 for (var field in properties) {
                     var value = properties[field];
