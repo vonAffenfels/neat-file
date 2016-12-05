@@ -115,6 +115,7 @@ module.exports = class Files extends Module {
                         name: properties.name || uploadedFileObj.originalname,
                         originalname: uploadedFileObj.originalname,
                         type: this.getTypeFromMimeType(uploadedFileObj.mimetype),
+                        filesize: uploadedFileObj.size,
                         mimetype: uploadedFileObj.mimetype,
                         extension: this.getExtensionFromMimeType(uploadedFileObj.mimetype)
                     }));

@@ -20,6 +20,11 @@ var schema = new mongoose.Schema({
         required: true
     },
 
+    filesize: {
+        type: "Number",
+        required: true
+    },
+
     originalname: {
         type: "String",
         required: true
