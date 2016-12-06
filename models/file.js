@@ -22,7 +22,8 @@ var schema = new mongoose.Schema({
 
     filesize: {
         type: "Number",
-        required: true
+        required: false,
+        default: 0
     },
 
     originalname: {
