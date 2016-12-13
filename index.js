@@ -263,7 +263,7 @@ module.exports = class Files extends Module {
                     newFile.set("originalname", parsedPath.name);
                     newFile.set("type", type);
                     newFile.set("mimetype", mimetype);
-                    newFile.set("extension", parsedPath.ext.substr(1));
+                    newFile.set("extension", parsedPath.ext.substr(1).toLowerCase());
                 } catch (e) {
                     this.log.error(e);
                     return reject(e);
