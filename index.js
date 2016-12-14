@@ -255,14 +255,18 @@ module.exports = class Files extends Module {
                     return reject(new Error(err.toString()));
                 }
 
+                var stats = fs.statSync(targetTempPath);
+                var fileSizeInBytes = stats["size"];
+
                 var mimetype = mime.lookup(targetTempPath);
                 var type = this.getTypeFromMimeType(mimetype);
 
                 try {
                     newFile.set("name", parsedPath.name);
-                    newFile.set("originalname", parsedPath.name);
+                    newFile.set("originalname", parsedPath.name + parsedPath.ext);
                     newFile.set("type", type);
                     newFile.set("mimetype", mimetype);
+                    newFile.set("filesize", fileSizeInBytes);
                     newFile.set("extension", parsedPath.ext.substr(1).toLowerCase());
                 } catch (e) {
                     this.log.error(e);
