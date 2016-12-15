@@ -249,10 +249,22 @@ module.exports = class Files extends Module {
             var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
             this.log.debug("Downloading " + requestUrl);
-            return request(url).pipe(fs.createWriteStream(targetTempPath)).on('close', (err) => {
+            let reqPromise =  request(url).on("response", (res)=> {
+                if(res.statusCode === 404){
+                    this.log.error("404, File not found %s", requestUrl);
+                    return reject(new Error("404, File not found"));
+                }
+
+                return res;
+            }).pipe(fs.createWriteStream(targetTempPath)).on('close', (err) => {
                 if (err) {
                     this.log.error(err);
                     return reject(new Error(err.toString()));
+                }
+
+                // Was already rejected, do nothing
+                if(reqPromise.isRejected()){
+                    return;
                 }
 
                 var stats = fs.statSync(targetTempPath);
@@ -273,7 +285,7 @@ module.exports = class Files extends Module {
                     return reject(e);
                 }
 
-                this.log.debug("Saving File in DB");
+                this.log.debug("Saving File in DB %s", parsedPath.name);
                 return newFile.save().then(() => {
                     this.log.debug("Saved, moving file to target location");
 
@@ -302,6 +314,8 @@ module.exports = class Files extends Module {
                     reject(new Error(err.toString()))
                 });
             });
+
+            return reqPromise;
         });
     }
 
