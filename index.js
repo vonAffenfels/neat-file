@@ -232,7 +232,7 @@ module.exports = class Files extends Module {
      * @param url
      */
     importFromUrl(url, newFile) {
-        return new Promise((resolve, reject) => {
+        let reqPromise =  new Promise((resolve, reject) => {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
             var requestUrl = url;
             if (typeof url == 'object') {
@@ -249,7 +249,7 @@ module.exports = class Files extends Module {
             var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
             this.log.debug("Downloading " + requestUrl);
-            let reqPromise =  request(url).on("response", (res)=> {
+            return request(url).on("response", (res)=> {
                 if(res.statusCode === 404){
                     this.log.error("404, File not found %s", requestUrl);
                     return reject(new Error("404, File not found"));
@@ -315,8 +315,9 @@ module.exports = class Files extends Module {
                 });
             });
 
-            return reqPromise;
         });
+
+        return reqPromise;
     }
 
 
