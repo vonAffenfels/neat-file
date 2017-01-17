@@ -151,7 +151,7 @@ module.exports = class Files extends Module {
                 for (var field in properties) {
                     var value = properties[field];
 
-                    if([
+                    if ([
                             "originalname",
                             "type",
                             "mimetype",
@@ -245,7 +245,7 @@ module.exports = class Files extends Module {
             hashed.update(requestUrl);
             hashed = hashed.digest("hex");
             var parsedUrl = queryParser(requestUrl);
-            var parsedPath = path.parse(parsedUrl.path);
+            var parsedPath = path.parse(parsedUrl.pathname);
             var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
             this.log.debug("Downloading " + requestUrl);
@@ -267,7 +267,7 @@ module.exports = class Files extends Module {
                     newFile.set("type", type);
                     newFile.set("mimetype", mimetype);
                     newFile.set("filesize", fileSizeInBytes);
-                    newFile.set("extension", parsedPath.ext.substr(1).toLowerCase());
+                    newFile.set("extension", parsedPath.ext.substr(1).toLowerCase() || 'jpg');
                 } catch (e) {
                     this.log.error(e);
                     return reject(e);
