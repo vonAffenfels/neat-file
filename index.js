@@ -382,11 +382,11 @@ module.exports = class Files extends Module {
             schema.pre("save", function (doc, next) {
                 if (self.distributor) {
                     self.distributor.distributeFile(doc.get("filepath")).then(() => {
-                        this.log.debug("Distributed File");
+                        self.log.debug("Distributed File");
                         next();
                     }, (e) => {
-                        this.log.error("Distribution of file " + doc.get("filepath") + " failed!");
-                        this.log.error(e);
+                        self.log.error("Distribution of file " + doc.get("filepath") + " failed!");
+                        self.log.error(e);
                         next();
                     });
                 } else {
