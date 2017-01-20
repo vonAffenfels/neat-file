@@ -139,9 +139,9 @@ module.exports = class Files extends Module {
         properties = properties || {};
 
         return new Promise((resolve, reject) => {
-            var model = Application.modules[this.config.dbModuleName].getModel("file");
-            var getFileObjectPromise;
-            var originalGetFileObjectPromise = new Promise((resolve, reject) => {
+            let model = Application.modules[this.config.dbModuleName].getModel("file");
+            let getFileObjectPromise;
+            let originalGetFileObjectPromise = new Promise((resolve, reject) => {
                 try {
                     resolve(new model({
                         name: properties.name || uploadedFileObj.originalname,
@@ -379,13 +379,13 @@ module.exports = class Files extends Module {
             /**
              * PRE save hook for file distribution to other servers
              */
-            schema.pre("save", function (doc, next) {
+            schema.pre("save", function (next) {
                 if (self.distributor) {
-                    self.distributor.distributeFile(doc.get("filepath")).then(() => {
+                    self.distributor.distributeFile(this.get("filepath")).then(() => {
                         self.log.debug("Distributed File");
                         next();
                     }, (e) => {
-                        self.log.error("Distribution of file " + doc.get("filepath") + " failed!");
+                        self.log.error("Distribution of file " + this.get("filepath") + " failed!");
                         self.log.error(e);
                         next();
                     });
