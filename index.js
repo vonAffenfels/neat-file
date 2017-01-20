@@ -76,12 +76,12 @@ module.exports = class Files extends Module {
                     } else {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path,
+                            root: "/",
                             servers: conf[this.config.distributeKey].servers
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path,
+                            root: "/",
                             servers: conf[this.config.distributeKeyGenerated].servers
                         });
                     }
@@ -211,11 +211,11 @@ module.exports = class Files extends Module {
                         }
 
                         if (this.distributor) {
-                            return this.distributor.distributeFile(this.fileDir + "/" + newFile.filename).then(() => {
+                            return this.distributor.distributeFile(newFile.get("filepath")).then(() => {
                                 this.log.debug("Distributed File");
                                 return resolve(newFile);
                             }, (e) => {
-                                this.log.error("Distribution of file " + this.fileDir + "/" + newFile.filename + " failed!");
+                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
                                 this.log.error(e);
                                 return resolve(newFile);
                             });
