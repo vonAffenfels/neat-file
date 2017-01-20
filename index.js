@@ -76,7 +76,7 @@ module.exports = class Files extends Module {
                     } else {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: "/",
+                            root: Application.config.rootPath,
                             servers: conf[this.config.distributeKey].servers
                         });
                         this.distributorGenerated = new Distributor({
@@ -354,7 +354,7 @@ module.exports = class Files extends Module {
 
                         if (this.distributor) {
                             this.distributor.distributeFile(newFile.get("filepath")).then(() => {
-                                this.log.debug("Distributed File");
+                                this.log.debug("Distributed File " + newFile.get("filepath"));
                                 resolve(newFile);
                             }, (e) => {
                                 this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
@@ -390,7 +390,7 @@ module.exports = class Files extends Module {
             });
 
             schema.virtual("filepath").get(function () {
-                return Application.modules.file.config.fileDir + "/" + this.filename;
+                return this.config.fileDir + "/" + this.filename;
             });
 
             schema.pre("remove", function (next) {
