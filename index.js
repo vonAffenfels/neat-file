@@ -390,7 +390,7 @@ module.exports = class Files extends Module {
             });
 
             schema.virtual("filepath").get(function () {
-                return this.config.fileDir + "/" + this.filename;
+                return self.config.fileDir + "/" + this.filename;
             });
 
             schema.pre("remove", function (next) {
