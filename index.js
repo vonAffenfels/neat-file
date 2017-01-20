@@ -76,12 +76,12 @@ module.exports = class Files extends Module {
                     } else {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path + "/data/",
+                            root: Application.config.root_path,
                             servers: conf[this.config.distributeKey].servers
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path + "/data/",
+                            root: Application.config.root_path,
                             servers: conf[this.config.distributeKeyGenerated].servers
                         });
                     }
