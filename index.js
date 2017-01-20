@@ -81,7 +81,7 @@ module.exports = class Files extends Module {
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: "/",
+                            root: null,
                             servers: conf[this.config.distributeKeyGenerated].servers
                         });
                     }
