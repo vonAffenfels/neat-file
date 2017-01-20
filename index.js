@@ -76,7 +76,7 @@ module.exports = class Files extends Module {
                     } else {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.rootPath,
+                            root: Application.config.root_path,
                             servers: conf[this.config.distributeKey].servers
                         });
                         this.distributorGenerated = new Distributor({
@@ -394,8 +394,12 @@ module.exports = class Files extends Module {
             });
 
             schema.pre("remove", function (next) {
-                var fullFilePath = Application.config.rootPath + this.filepath;
-                fs.unlink(fullFilePath);
+                let fullFilePath = Application.config.root_path + this.filepath;
+                try {
+                    fs.unlink(fullFilePath);
+                } catch (e) {
+
+                }
                 next();
             });
         }
