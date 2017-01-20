@@ -77,12 +77,12 @@ module.exports = class Files extends Module {
                     } else {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path + this.config.fileDir,
+                            root: Application.config.root_path,
                             servers: conf[this.config.distributeKey].servers
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
-                            root: Application.config.root_path + this.config.imagesDir,
+                            root: Application.config.root_path,
                             servers: conf[this.config.distributeKeyGenerated].servers
                         });
                     }
@@ -212,11 +212,11 @@ module.exports = class Files extends Module {
                         }
 
                         if (this.distributor) {
-                            return this.distributor.distributeFile(newFile.get("filename")).then(() => {
-                                this.log.debug("Distributed File " + newFile.get("filename"));
+                            return this.distributor.distributeFile(newFile.get("filepath"), newFile.get("filepath")).then(() => {
+                                this.log.debug("Distributed File " + newFile.get("filepath"));
                                 return resolve(newFile);
                             }, (e) => {
-                                this.log.error("Distribution of file " + newFile.get("filename") + " failed!");
+                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
                                 this.log.error(e);
                                 return resolve(newFile);
                             });
@@ -354,11 +354,11 @@ module.exports = class Files extends Module {
                         this.log.debug("Moved File to target Location!");
 
                         if (this.distributor) {
-                            this.distributor.distributeFile(newFile.get("filename")).then(() => {
-                                this.log.debug("Distributed File " + newFile.get("filename"));
+                            this.distributor.distributeFile(newFile.get("filepath"), newFile.get("filepath")).then(() => {
+                                this.log.debug("Distributed File " + newFile.get("filepath"));
                                 resolve(newFile);
                             }, (e) => {
-                                this.log.error("Distribution of file " + newFile.get("filename") + " failed!");
+                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
                                 this.log.error(e);
                                 resolve(newFile);
                             });
