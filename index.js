@@ -210,6 +210,19 @@ module.exports = class Files extends Module {
                             return reject(err);
                         }
 
+                        if (this.distributor) {
+                            this.distributor.distributeFile(newFile.get("filepath")).then(() => {
+                                this.log.debug("Distributed File");
+                                resolve(newFile);
+                            }, (e) => {
+                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
+                                this.log.error(e);
+                                resolve(newFile);
+                            });
+                        } else {
+                            resolve(newFile);
+                        }
+
                         resolve(newFile);
                     });
                 }, reject);
@@ -346,7 +359,7 @@ module.exports = class Files extends Module {
                                 this.log.debug("Distributed File");
                                 resolve(newFile);
                             }, (e) => {
-                                this.log.error("Distribution of file " + this.get("filepath") + " failed!");
+                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
                                 this.log.error(e);
                                 resolve(newFile);
                             });
