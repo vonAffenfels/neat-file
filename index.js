@@ -211,19 +211,17 @@ module.exports = class Files extends Module {
                         }
 
                         if (this.distributor) {
-                            this.distributor.distributeFile(newFile.get("filepath")).then(() => {
+                            return this.distributor.distributeFile(this.fileDir + "/" + newFile.filename).then(() => {
                                 this.log.debug("Distributed File");
-                                resolve(newFile);
+                                return resolve(newFile);
                             }, (e) => {
-                                this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
+                                this.log.error("Distribution of file " + this.fileDir + "/" + newFile.filename + " failed!");
                                 this.log.error(e);
-                                resolve(newFile);
+                                return resolve(newFile);
                             });
                         } else {
-                            resolve(newFile);
+                            return resolve(newFile);
                         }
-
-                        resolve(newFile);
                     });
                 }, reject);
             }, reject);
