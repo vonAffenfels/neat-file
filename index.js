@@ -340,7 +340,19 @@ module.exports = class Files extends Module {
                         }
 
                         this.log.debug("Moved File to target Location!");
-                        resolve(newFile);
+
+                        if (this.distributor) {
+                            this.distributor.distributeFile(newFile.get("filepath")).then(() => {
+                                this.log.debug("Distributed File");
+                                resolve(newFile);
+                            }, (e) => {
+                                this.log.error("Distribution of file " + this.get("filepath") + " failed!");
+                                this.log.error(e);
+                                resolve(newFile);
+                            });
+                        } else {
+                            resolve(newFile);
+                        }
                     });
                 }, (err) => {
                     reject(new Error(err.toString()))
@@ -374,24 +386,6 @@ module.exports = class Files extends Module {
                 var fullFilePath = Application.config.rootPath + this.filepath;
                 fs.unlink(fullFilePath);
                 next();
-            });
-
-            /**
-             * PRE save hook for file distribution to other servers
-             */
-            schema.pre("save", function (next) {
-                if (self.distributor) {
-                    self.distributor.distributeFile(this.get("filepath")).then(() => {
-                        self.log.debug("Distributed File");
-                        next();
-                    }, (e) => {
-                        self.log.error("Distribution of file " + this.get("filepath") + " failed!");
-                        self.log.error(e);
-                        next();
-                    });
-                } else {
-                    next();
-                }
             });
         }
     }
