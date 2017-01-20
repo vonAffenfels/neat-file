@@ -75,9 +75,14 @@ module.exports = class Files extends Module {
                         this.log.error("Distribute config key doesnt exist " + this.config.distributeKey);
                     } else {
                         this.distributor = new Distributor({
-                            debug: false,
+                            debug: this.config.distributeDebug || false,
                             root: Application.config.root_path + "/data/",
                             servers: conf[this.config.distributeKey].servers
+                        });
+                        this.distributorGenerated = new Distributor({
+                            debug: this.config.distributeDebug || false,
+                            root: Application.config.root_path + "/data/",
+                            servers: conf[this.config.distributeKeyGenerated].servers
                         });
                     }
                 }
@@ -372,16 +377,20 @@ module.exports = class Files extends Module {
             });
 
             /**
-             * POST save hook for file distribution to other servers
+             * PRE save hook for file distribution to other servers
              */
-            schema.post("save", function (doc) {
+            schema.pre("save", function (doc, next) {
                 if (self.distributor) {
                     self.distributor.distributeFile(doc.get("filepath")).then(() => {
                         this.log.debug("Distributed File");
+                        next();
                     }, (e) => {
                         this.log.error("Distribution of file " + doc.get("filepath") + " failed!");
                         this.log.error(e);
+                        next();
                     });
+                } else {
+                    next();
                 }
             });
         }
