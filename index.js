@@ -1,19 +1,19 @@
 "use strict";
 
 // @IMPORTS
-var Application = require("neat-base").Application;
-var Module = require("neat-base").Module;
-var Tools = require("neat-base").Tools;
-var multer = require('multer');
-var mkdirp = require('mkdirp');
-var fs = require('fs');
-var path = require("path");
-var queryParser = require("url").parse;
-
-var mime = require("mime");
-var request = require('request');
-var crypto = require("crypto");
-var Promise = require("bluebird");
+const Application = require("neat-base").Application;
+const Module = require("neat-base").Module;
+const Tools = require("neat-base").Tools;
+const multer = require('multer');
+const mkdirp = require('mkdirp');
+const fs = require('fs');
+const path = require("path");
+const queryParser = require("url").parse;
+const Distributor = require("distribute-files").Distributor;
+const mime = require("mime");
+const request = require('request');
+const crypto = require("crypto");
+const Promise = require("bluebird");
 
 module.exports = class Files extends Module {
 
@@ -48,17 +48,44 @@ module.exports = class Files extends Module {
             this.fileDir = Application.config.root_path + this.config.fileDir;
 
             // setup multer
-            var uploader = multer({
+            let uploader = multer({
                 dest: this.uploadTarget,
                 limits: {
                     fileSize: this.config.limits.fileSize * 1024 * 1024
                 }
             });
 
+            // Setup distributor for file distribution if available / required
+            if (this.config.distributeConfig) {
+                if (typeof this.config.distributeConfig === "object") {
+                    this.distributor = new Distributor(this.config.distributeConfig);
+                } else {
+                    let conf = null;
+                    try {
+                        conf = fs.readFileSync(this.config.distributeConfig);
+                        conf = JSON.parse(conf);
+                    } catch (e) {
+                        this.log.error("Error while loading " + this.config.distributeConfig);
+                        throw e;
+                    }
+
+                    if (!conf) {
+                        this.log.error("Error while loading " + this.config.distributeConfig);
+                    } else if (!conf[this.config.distributeKey]) {
+                        this.log.error("Distribute config key doesnt exist " + this.config.distributeKey);
+                    } else {
+                        this.distributor = new Distributor({
+                            debug: false,
+                            root: Application.config.root_path + "/data/",
+                            servers: conf[this.config.distributeKey].servers
+                        });
+                    }
+                }
+            }
+
             // create any missing directories (sync because its startup after all)
             mkdirp.sync(this.uploadTarget);
             mkdirp.sync(this.fileDir);
-
 
             /*
              Routes
@@ -232,7 +259,7 @@ module.exports = class Files extends Module {
      * @param url
      */
     importFromUrl(url, newFile) {
-        let reqPromise =  new Promise((resolve, reject) => {
+        let reqPromise = new Promise((resolve, reject) => {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
             var requestUrl = url;
             if (typeof url == 'object') {
@@ -249,8 +276,8 @@ module.exports = class Files extends Module {
             var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
             this.log.debug("Downloading " + requestUrl);
-            return request(url).on("response", (res)=> {
-                if(res.statusCode === 404){
+            return request(url).on("response", (res) => {
+                if (res.statusCode === 404) {
                     this.log.error("404, File not found %s", requestUrl);
                     return reject(new Error("404, File not found"));
                 }
@@ -263,7 +290,7 @@ module.exports = class Files extends Module {
                 }
 
                 // Was already rejected, do nothing
-                if(reqPromise.isRejected()){
+                if (reqPromise.isRejected()) {
                     return;
                 }
 
@@ -328,6 +355,8 @@ module.exports = class Files extends Module {
      */
     modifySchema(name, schema) {
         if (name === "file") {
+            let self = this;
+
             schema.virtual("filename").get(function () {
                 return this._id + "." + this.extension;
             });
@@ -340,6 +369,20 @@ module.exports = class Files extends Module {
                 var fullFilePath = Application.config.rootPath + this.filepath;
                 fs.unlink(fullFilePath);
                 next();
+            });
+
+            /**
+             * POST save hook for file distribution to other servers
+             */
+            schema.post("save", function (doc) {
+                if (self.distributor) {
+                    self.distributor.distributeFile(doc.get("filepath")).then(() => {
+                        this.log.debug("Distributed File");
+                    }, (e) => {
+                        this.log.error("Distribution of file " + doc.get("filepath") + " failed!");
+                        this.log.error(e);
+                    });
+                }
             });
         }
     }

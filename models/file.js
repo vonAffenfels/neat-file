@@ -1,14 +1,14 @@
 "use strict";
 
 // @IMPORTS
-var fs = require("fs");
-var Application = require("neat-base").Application;
-var Module = require("neat-base").Module;
-var Tools = require("neat-base").Tools;
-var mongoose = Application.modules.database.mongoose;
-var _ = require("underscore");
+const fs = require("fs");
+const Application = require("neat-base").Application;
+const Module = require("neat-base").Module;
+const Tools = require("neat-base").Tools;
+const mongoose = Application.modules.database.mongoose;
+const _ = require("underscore");
 
-var schema = new mongoose.Schema({
+let schema = new mongoose.Schema({
 
     name: {
         type: "string",
