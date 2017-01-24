@@ -47,6 +47,13 @@ let schema = new mongoose.Schema({
     }
 
 }, {
+    permissions: {
+        find: true,
+        findOne: true,
+        count: true,
+        save: "own",
+        remove: "own"
+    },
     toJSON: {
         virtuals: true
     },
