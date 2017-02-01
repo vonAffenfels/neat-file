@@ -51,6 +51,7 @@ let schema = new mongoose.Schema({
         find: true,
         findOne: true,
         count: true,
+        schema: true,
         save: "own",
         remove: "own"
     },
