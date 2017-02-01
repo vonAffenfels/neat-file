@@ -256,8 +256,6 @@ module.exports = class Files extends Module {
             "jpg",
             "jpeg",
             "gif",
-            "eps",
-            "tif",
             "bmp",
             "png"
         ];
