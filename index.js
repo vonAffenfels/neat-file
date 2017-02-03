@@ -98,28 +98,36 @@ module.exports = class Files extends Module {
              */
             if (Application.modules[this.config.webserverModuleName]) {
                 // upload a single file
-                Application.modules[this.config.webserverModuleName].addRoute("post", this.config.uploadRoute, uploader.single('file'), (req, res) => {
-                    if (!req.file) {
-                        res.status(400);
-                        return res.end("No file was uploaded");
-                    }
+                let singleUpload = uploader.single('file');
+                Application.modules[this.config.webserverModuleName].addRoute("post", this.config.uploadRoute, (req, res) => {
+                    singleUpload(req, res, (err) => {
+                        if (err) {
+                            res.status(500);
+                            return res.end("Error while uploading the file " + err.toString());
+                        }
 
-                    // if configured require an authed user to allow upload
-                    if (this.config.uploadRequiresAuth && !req.user) {
-                        res.status(401);
-                        return res.end();
-                    }
+                        if (!req.file) {
+                            res.status(400);
+                            return res.end("No file was uploaded");
+                        }
 
-                    // check if the user actually has access to the upload (if configured)
-                    if (this.config.uploadRequiresPermission && !Application.modules[this.config.authModuleName].hasPermission(req, "file", "save")) {
-                        res.status(401);
-                        return res.end();
-                    }
+                        // if configured require an authed user to allow upload
+                        if (this.config.uploadRequiresAuth && !req.user) {
+                            res.status(401);
+                            return res.end();
+                        }
 
-                    this.saveUploadedFile(req.file, req.body, req).then((data) => {
-                        res.json(data);
-                    }, (err) => {
-                        res.err(err);
+                        // check if the user actually has access to the upload (if configured)
+                        if (this.config.uploadRequiresPermission && !Application.modules[this.config.authModuleName].hasPermission(req, "file", "save")) {
+                            res.status(401);
+                            return res.end();
+                        }
+
+                        this.saveUploadedFile(req.file, req.body, req).then((data) => {
+                            res.json(data);
+                        }, (err) => {
+                            res.err(err);
+                        });
                     });
                 }, 9999);
             }
