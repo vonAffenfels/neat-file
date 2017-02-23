@@ -136,6 +136,67 @@ module.exports = class Files extends Module {
         });
     }
 
+    getFileSizeFromBase64(string) {
+        if (typeof string !== 'string') {
+            return 0;
+        }
+
+        return parseInt((string).replace(/=/g, "").length * 0.75);
+    }
+
+    decodeBase64(string) {
+        let matches = string.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        let response = {};
+
+        if (matches.length !== 3) {
+            return new Error('Invalid input string');
+        }
+
+        response.type = matches[1];
+        response.data = new Buffer(matches[2], 'base64');
+
+        return response;
+    }
+
+    saveFileFromBase64(string) {
+        return new Promise((resolve, reject) => {
+            let decoded = this.decodeBase64(string);
+            let model = Application.modules[this.config.dbModuleName].getModel("file");
+            let name = new Application.modules[this.config.dbModuleName].mongoose.Schema.Types.ObjectId().toString();
+            let mimetype = decoded.type;
+            let doc = new model({
+                name: name,
+                originalname: name,
+                type: this.getTypeFromMimeType(mimetype),
+                filesize: this.getFileSizeFromBase64(string),
+                mimetype: mimetype,
+                extension: this.getExtensionFromMimeType(mimetype)
+            });
+
+            doc.save().then(() => {
+                try {
+                    fs.writeFileSync(this.fileDir + "/" + doc.filename, decoded.data);
+                } catch (e) {
+                    doc.remove();
+                    return reject(err);
+                }
+
+                if (this.distributor) {
+                    return this.distributor.distributeFile(doc.get("filepath"), doc.get("filepath")).then(() => {
+                        this.log.debug("Distributed File " + doc.get("filepath"));
+                        return resolve(doc);
+                    }, (e) => {
+                        this.log.error("Distribution of file " + doc.get("filepath") + " failed!");
+                        this.log.error(e);
+                        return resolve(doc);
+                    });
+                } else {
+                    return resolve(doc);
+                }
+            }, reject)
+        });
+    }
+
     /**
      * Properties can contain a name for the file, if none is given the originalfilename will be taken
      *
