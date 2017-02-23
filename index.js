@@ -162,7 +162,7 @@ module.exports = class Files extends Module {
         return new Promise((resolve, reject) => {
             let decoded = this.decodeBase64(string);
             let model = Application.modules[this.config.dbModuleName].getModel("file");
-            let name = new Application.modules[this.config.dbModuleName].mongoose.Schema.Types.ObjectId().toString();
+            let name = new Application.modules[this.config.dbModuleName].mongoose.Types.ObjectId().toString();
             let mimetype = decoded.type;
             let doc = new model({
                 name: name,
