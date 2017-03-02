@@ -321,20 +321,16 @@ module.exports = class Files extends Module {
             mimetype = "";
         }
 
-        var imageIdentifiers = [
-            "jpg",
-            "jpeg",
-            "gif",
-            "bmp",
-            "png"
-        ];
+        if (mimetype.indexOf("image") !== -1) {
+            return "image";
+        }
 
-        for (let i = 0; i < imageIdentifiers.length; i++) {
-            let identifier = imageIdentifiers[i];
+        if (mimetype.indexOf("video") !== -1) {
+            return "video";
+        }
 
-            if (mimetype.indexOf(identifier) !== -1) {
-                return "image";
-            }
+        if (mimetype.indexOf("audio") !== -1) {
+            return "audio ";
         }
 
         return "misc";
