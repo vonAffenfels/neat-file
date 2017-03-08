@@ -197,6 +197,46 @@ module.exports = class Files extends Module {
         });
     }
 
+    saveFileFromLocalPath(sourcePath) {
+        return new Promise((resolve, reject) => {
+            let stats = fs.statSync(sourcePath);
+            let content = fs.readFileSync(sourcePath);
+            let parts = path.parse(sourcePath);
+            let model = Application.modules[this.config.dbModuleName].getModel("file");
+            let mimetype = this.getMimeTypeFromFilename(parts.base);
+            let doc = new model({
+                name: parts.name,
+                originalname: parts.name,
+                type: this.getTypeFromMimeType(mimetype),
+                filesize: stats.size,
+                mimetype: mimetype,
+                extension: this.getExtensionFromMimeType(mimetype)
+            });
+
+            doc.save().then(() => {
+                try {
+                    fs.writeFileSync(this.fileDir + "/" + doc.filename, content);
+                } catch (e) {
+                    doc.remove();
+                    return reject(err);
+                }
+
+                if (this.distributor) {
+                    return this.distributor.distributeFile(doc.get("filepath"), doc.get("filepath")).then(() => {
+                        this.log.debug("Distributed File " + doc.get("filepath"));
+                        return resolve(doc);
+                    }, (e) => {
+                        this.log.error("Distribution of file " + doc.get("filepath") + " failed!");
+                        this.log.error(e);
+                        return resolve(doc);
+                    });
+                } else {
+                    return resolve(doc);
+                }
+            }, reject)
+        });
+    }
+
     /**
      * Properties can contain a name for the file, if none is given the originalfilename will be taken
      *
@@ -308,6 +348,18 @@ module.exports = class Files extends Module {
         }
 
         return mime.extension(mimetype);
+    }
+
+    /**
+     *
+     * @param mimetype
+     */
+    getMimeTypeFromFilename(filename) {
+        if (typeof filename !== "string") {
+            filename = "";
+        }
+
+        return mime.lookup(filename);
     }
 
     /**
