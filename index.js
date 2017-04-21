@@ -493,6 +493,93 @@ module.exports = class Files extends Module {
         return reqPromise;
     }
 
+    /**
+     *
+     * @param path
+     * @param newFile
+     */
+    importFile(filePath, newFile) {
+        let reqPromise = new Promise((resolve, reject) => {
+            let model = Application.modules[this.config.dbModuleName].getModel("file");
+            let hashed = crypto.createHash("md5");
+            
+            newFile = newFile || new model();
+            hashed.update(filePath);
+            hashed = hashed.digest("hex");
+            
+            let parsedPath = path.parse(filePath);
+            let targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
+
+            this.log.debug("Copying file to temp path " + targetTempPath);
+            try {
+                fs.writeFileSync(targetTempPath, fs.readFileSync(filePath))
+            } catch (e) {
+                reject(e);
+            }
+
+            let stats = fs.statSync(targetTempPath);
+            let fileSizeInBytes = stats["size"];
+            let mimetype = mime.lookup(targetTempPath);
+            let type = this.getTypeFromMimeType(mimetype);
+
+            try {
+                newFile.set("name", parsedPath.name);
+                newFile.set("originalname", parsedPath.name + parsedPath.ext);
+                newFile.set("type", type);
+                newFile.set("mimetype", mimetype);
+                newFile.set("filesize", fileSizeInBytes);
+                newFile.set("extension", parsedPath.ext.substr(1).toLowerCase() || 'jpg');
+            } catch (e) {
+                this.log.error(e);
+                return reject(e);
+            }
+
+            this.log.debug("Saving File in DB %s", parsedPath.name);
+            return newFile.save().then(() => {
+                this.log.debug("Saved, moving file to target location");
+
+                try {
+                    fs.unlinkSync(this.fileDir + "/" + newFile.filename);
+                } catch (e) {
+                    // file existed, we just deleted to make sure it didnt exist, so ignore
+                }
+
+                fs.rename(targetTempPath, this.fileDir + "/" + newFile.filename, (err) => {
+                    if (err) {
+                        try {
+                            fs.unlinkSync(targetTempPath);
+                        } catch (e) {
+                            this.log.error(e);
+                        }
+
+                        this.log.error(err);
+                        return reject(err);
+                    }
+
+                    this.log.debug("Moved File to target Location!");
+
+                    if (this.distributor) {
+                        this.distributor.distributeFile(newFile.get("filepath"), newFile.get("filepath")).then(() => {
+                            this.log.debug("Distributed File " + newFile.get("filepath"));
+                            resolve(newFile);
+                        }, (e) => {
+                            this.log.error("Distribution of file " + newFile.get("filepath") + " failed!");
+                            this.log.error(e);
+                            resolve(newFile);
+                        });
+                    } else {
+                        resolve(newFile);
+                    }
+                });
+            }, (err) => {
+                reject(new Error(err.toString()))
+            });
+
+        });
+
+        return reqPromise;
+    }
+
 
     /**
      *
