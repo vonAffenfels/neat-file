@@ -502,11 +502,11 @@ module.exports = class Files extends Module {
         let reqPromise = new Promise((resolve, reject) => {
             let model = Application.modules[this.config.dbModuleName].getModel("file");
             let hashed = crypto.createHash("md5");
-            
+
             newFile = newFile || new model();
             hashed.update(filePath);
             hashed = hashed.digest("hex");
-            
+
             let parsedPath = path.parse(filePath);
             let targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
 
@@ -587,6 +587,8 @@ module.exports = class Files extends Module {
      * @param schema
      */
     modifySchema(name, schema) {
+        let self = this;
+
         if (name === "file") {
             let self = this;
 
@@ -607,6 +609,33 @@ module.exports = class Files extends Module {
                 }
                 next();
             });
+        } else {
+            /**
+             * get all file docs connected to current document as an Object with the path as the key
+             *
+             * @returns {bluebird}
+             */
+            schema.methods.getConnectedFiles = function () {
+                return new Promise((resolve, reject) => {
+                    let files = {};
+                    let currentModel = Application.modules[self.config.dbModuleName].getModel(name);
+                    let possiblePaths = Application.modules[self.config.dbModuleName].getPossibleLinkPathsFromModel(currentModel, "file");
+
+                    return currentModel.populate(this, Object.keys(possiblePaths)).then(() => {
+                        for (let path in possiblePaths) {
+                            let val = this.get(path);
+
+                            if (val) {
+                                if (val instanceof Array && val.length) {
+                                    files[path] = val;
+                                }
+                            }
+                        }
+
+                        return resolve(files);
+                    });
+                });
+            }
         }
     }
 }
