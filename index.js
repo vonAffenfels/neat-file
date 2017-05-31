@@ -411,9 +411,9 @@ module.exports = class Files extends Module {
 
             this.log.debug("Downloading " + requestUrl);
             return request(url).on("response", (res) => {
-                if (res.statusCode === 404) {
-                    this.log.error("404, File not found %s", requestUrl);
-                    return reject(new Error("404, File not found"));
+                if (res.statusCode !== 200) {
+                    this.log.error(res.statusCode + ", %s", requestUrl);
+                    return reject(new Error(res.statusCode + " - Could not download image"));
                 }
 
                 return res;
@@ -425,6 +425,11 @@ module.exports = class Files extends Module {
 
                 // Was already rejected, do nothing
                 if (reqPromise.isRejected()) {
+                    try {
+                        fs.unlinkSync(targetTempPath);
+                    } catch (e) {
+                        this.log.warn(e);
+                    }
                     return;
                 }
 
