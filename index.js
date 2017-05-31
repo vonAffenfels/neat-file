@@ -392,7 +392,7 @@ module.exports = class Files extends Module {
      *
      * @param url
      */
-    importFromUrl(url, newFile) {
+    importFromUrl(url, newFile, extension) {
         let reqPromise = new Promise((resolve, reject) => {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
             var requestUrl = url;
@@ -407,7 +407,8 @@ module.exports = class Files extends Module {
             hashed = hashed.digest("hex");
             var parsedUrl = queryParser(requestUrl);
             var parsedPath = path.parse(parsedUrl.pathname);
-            var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
+            extension = extension || parsedPath.ext;
+            var targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + extension);
 
             this.log.debug("Downloading " + requestUrl);
             return request(url).on("response", (res) => {
@@ -441,7 +442,7 @@ module.exports = class Files extends Module {
 
                 try {
                     newFile.set("name", parsedPath.name);
-                    newFile.set("originalname", parsedPath.name + parsedPath.ext);
+                    newFile.set("originalname", parsedPath.name + extension);
                     newFile.set("type", type);
                     newFile.set("mimetype", mimetype);
                     newFile.set("filesize", fileSizeInBytes);
