@@ -54,38 +54,6 @@ module.exports = class Files extends Module {
                 dest: this.uploadTarget,
                 limits: {
                     fileSize: this.config.limits.fileSize * 1024 * 1024
-                },
-                onFileUploadStart: (file) => {
-                    if (this.config.debug) {
-                        this.log.info('Starting ' + file.fieldname);
-                    }
-                },
-                onFileUploadData: function (file, data) {
-                    if (this.config.debug) {
-                        this.log.info('Got a chunk of data!');
-                    }
-                },
-                onFileUploadComplete: function (file) {
-                    if (this.config.debug) {
-                        this.log.info('Completed file!');
-                    }
-                },
-                onParseStart: function () {
-                    if (this.config.debug) {
-                        this.log.info('Starting to parse request!');
-                    }
-                },
-                onParseEnd: function (req, next) {
-                    if (this.config.debug) {
-                        this.log.info('Done parsing!');
-                    }
-                    next();
-                },
-                onError: function (e, next) {
-                    if (e) {
-                        this.log.error(e);
-                    }
-                    next();
                 }
             });
 
