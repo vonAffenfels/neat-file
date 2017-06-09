@@ -100,6 +100,12 @@ module.exports = class Files extends Module {
                 // upload a single file
                 let singleUpload = uploader.single('file');
                 Application.modules[this.config.webserverModuleName].addRoute("post", this.config.uploadRoute, (req, res) => {
+                    if (this.config.debug) {
+                        this.log.info("Upload route");
+                        this.log.info("Headers", req.headers);
+                        this.log.info("Body", req.body);
+                        this.log.info("Querystring", req.query);
+                    }
                     singleUpload(req, res, (err) => {
                         if (err) {
                             res.status(500);
