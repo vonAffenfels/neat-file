@@ -28,6 +28,7 @@ module.exports = class Files extends Module {
             webserverModuleName: "webserver",
             uploadRequiresAuth: true,
             uploadRequiresPermission: true,
+            debug: false,
             limits: {
                 fileSize: 5
             }
