@@ -90,12 +90,14 @@ module.exports = class Files extends Module {
                         this.distributor = new Distributor({
                             debug: this.config.distributeDebug || false,
                             root: Application.config.root_path,
-                            servers: conf[this.config.distributeKey].servers
+                            servers: conf[this.config.distributeKey].servers,
+                            errordir: conf[this.config.distributeKey].errordir
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
                             root: Application.config.root_path,
-                            servers: conf[this.config.distributeKeyGenerated].servers
+                            servers: conf[this.config.distributeKeyGenerated].servers,
+                            errordir: conf[this.config.distributeKeyGenerated].errordir
                         });
                     }
                 }
