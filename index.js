@@ -60,7 +60,18 @@ module.exports = class Files extends Module {
             // Setup distributor for file distribution if available / required
             if (this.config.distributeConfig) {
                 if (typeof this.config.distributeConfig === "object") {
-                    this.distributor = new Distributor(this.config.distributeConfig);
+                    this.distributor = new Distributor({
+                        debug: this.config.distributeDebug || false,
+                        root: Application.config.root_path,
+                        errordir: this.config.distributeConfig[this.config.distributeKey].errordir,
+                        servers: this.config.distributeConfig[this.config.distributeKey].servers
+                    });
+                    this.distributorGenerated = new Distributor({
+                        debug: this.config.distributeDebug || false,
+                        root: Application.config.root_path,
+                        errordir: this.config.distributeConfig[this.config.distributeKeyGenerated].errordir,
+                        servers: this.config.distributeConfig[this.config.distributeKeyGenerated].servers
+                    });
                 } else {
                     let conf = null;
                     try {
@@ -179,6 +190,20 @@ module.exports = class Files extends Module {
         response.data = new Buffer(matches[2], 'base64');
 
         return response;
+    }
+
+    distributionQueue() {
+        let queues = [];
+
+        if (this.distributor) {
+            queues.push(this.distributor.processQueue());
+        }
+
+        if (this.distributorGenerated) {
+            queues.push(this.distributorGenerated.processQueue());
+        }
+
+        return Promise.all(queues);
     }
 
     saveFileFromBase64(string) {
@@ -636,6 +661,17 @@ module.exports = class Files extends Module {
                 } catch (e) {
 
                 }
+
+                let urls = Application.modules.imageserver.getUrls(this);
+
+                if (this.distributor) {
+                    this.distributor.removeFile(this.filepath, this.filepath);
+                }
+
+                if (this.distributorGenerated) {
+                    this.distributorGenerated.removeFile(this.filepath, this.filepath);
+                }
+
                 next();
             });
         } else {
@@ -666,5 +702,30 @@ module.exports = class Files extends Module {
                 });
             }
         }
+    }
+
+    cleanup(page, limit) {
+        return new Promise((resolve, reject) => {
+            page = page || 0;
+            limit = limit || 10;
+            let model = Application.modules[this.config.dbModuleName].getModel("file");
+
+            return model.find().sort({_id: -1}).limit(limit).skip(page * limit).then((docs) => {
+                return Promise.map(docs, (doc) => {
+                    return doc.getLinked().then((links) => {
+                        if (!links) {
+                            return doc.remove();
+                        }
+                    });
+                }).then(() => {
+                    if (docs.length < limit) {
+                        return;
+                    }
+
+                    page++;
+                    return this.cleanup(page, limit);
+                }, reject);
+            });
+        });
     }
 }
