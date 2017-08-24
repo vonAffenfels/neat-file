@@ -636,6 +636,40 @@ module.exports = class Files extends Module {
         return reqPromise;
     }
 
+    /**
+     *
+     * @param fileReadStream
+     * @param newFile
+     * @param fileName
+     */
+    importFileFromStream(fileReadStream, newFile, fileName) {
+        return new Promise((resolve, reject) => {
+            let hashed = crypto.createHash("md5");
+            hashed.update(fileName);
+            hashed = hashed.digest("hex");
+            let parsedPath = path.parse(fileName);
+            let targetTempPath = path.join(this.uploadTarget, (new Date().getTime()) + hashed + parsedPath.ext);
+
+            this.log.debug("Copying file to temp path " + targetTempPath);
+            try {
+                let writeStream = fs.createWriteStream(targetTempPath);
+                fileReadStream.pipe(writeStream);
+                writeStream.on('finish', () => {
+                    return this.importFile(targetTempPath, newFile).then((file) => {
+                        try {
+                            fs.unlinkSync(targetTempPath);
+                        } catch (e) {
+                            // file existed, we just deleted to make sure it didnt exist, so ignore
+                        }
+
+                        return resolve(file);
+                    });
+                });
+            } catch (e) {
+                return reject(e);
+            }
+        });
+    }
 
     /**
      *
