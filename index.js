@@ -706,36 +706,38 @@ module.exports = class Files extends Module {
                 }
 
                 for(let key in packagePaths) {
-                    let fullFilePath = Application.config.root_path + packagePaths[key];
-                    fullFilePath = path.resolve(fullFilePath);
-
                     imagesPaths.push(packagePaths[key]);
+                    if(Application.modules.imageserver) {
+                        let fullFilePath = Application.config.root_path + packagePaths[key];
+                        fullFilePath = path.resolve(fullFilePath);
+                        try {
+                            fs.unlink(fullFilePath);
+                        } catch (e) {
 
-                    try {
-                        fs.unlink(fullFilePath);
-                    } catch (e) {
-
+                        }
                     }
                 }
 
                 if (self.distributor) {
-                    Promise.each(imagesPaths, (imagePath) => {
-                        return self.distributor.removeFile(imagePath).then(() => {
-                            self.log.info("Removed file "+ this._id +" on all distribute servers!");
+
+                    for(let i = 0; i<imagesPaths.length; i++) {
+                        self.distributor.removeFile(imagePath).then(() => {
+                            self.log.info("Removed file "+ imagePath +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
                         });
-                    });
+                    }
                 }
 
                 if (self.distributorGenerated) {
-                    Promise.each(imagesPaths, (imagePath) => {
-                        return self.distributorGenerated.removeFile(imagePath).then(() => {
-                            self.log.info("Removed file "+ this._id +" on all distribute servers!");
+
+                    for(let i = 0; i<imagesPaths.length; i++) {
+                        self.distributorGenerated.removeFile(imagePath).then(() => {
+                            self.log.info("Removed file "+ imagePath +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
                         });
-                    });
+                    }
                 }
 
                 next();
