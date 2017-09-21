@@ -698,14 +698,44 @@ module.exports = class Files extends Module {
 
                 }
 
-                let urls = Application.modules.imageserver.getUrls(this);
+                let packagePaths = {};
+                let imagesPaths = [this.filepath];
 
-                if (this.distributor) {
-                    this.distributor.removeFile(this.filepath, this.filepath);
+                if(Application.modules.imageserver) {
+                    packagePaths = Application.modules.imageserver.getPaths(this, true) || {};
                 }
 
-                if (this.distributorGenerated) {
-                    this.distributorGenerated.removeFile(this.filepath, this.filepath);
+                for(let key in packagePaths) {
+                    let fullFilePath = Application.config.root_path + packagePaths[key];
+                    fullFilePath = path.resolve(fullFilePath);
+
+                    imagesPaths.push(packagePaths[key]);
+
+                    try {
+                        fs.unlink(fullFilePath);
+                    } catch (e) {
+
+                    }
+                }
+
+                if (self.distributor) {
+                    Promise.each(imagesPaths, (imagePath) => {
+                        return self.distributor.removeFile(imagePath).then(() => {
+                            self.log.info("Removed file "+ this._id +" on all distribute servers!");
+                        }).catch((e) => {
+                            // catch error, ignore failure
+                        });
+                    });
+                }
+
+                if (self.distributorGenerated) {
+                    Promise.each(imagesPaths, (imagePath) => {
+                        return self.distributorGenerated.removeFile(imagePath).then(() => {
+                            self.log.info("Removed file "+ this._id +" on all distribute servers!");
+                        }).catch((e) => {
+                            // catch error, ignore failure
+                        });
+                    });
                 }
 
                 next();
@@ -743,7 +773,7 @@ module.exports = class Files extends Module {
     cleanup(page, limit) {
         return new Promise((resolve, reject) => {
             page = page || 0;
-            limit = limit || 10;
+            limit = limit || 5;
             let model = Application.modules[this.config.dbModuleName].getModel("file");
 
             return model.find().sort({_id: -1}).limit(limit).skip(page * limit).then((docs) => {
@@ -764,4 +794,4 @@ module.exports = class Files extends Module {
             });
         });
     }
-}
+};
