@@ -692,17 +692,23 @@ module.exports = class Files extends Module {
 
             schema.pre("remove", function (next) {
                 let fullFilePath = Application.config.root_path + this.filepath;
-                try {
-                    fs.unlink(fullFilePath);
-                } catch (e) {
 
-                }
+                fs.unlink(fullFilePath, (e) => {
+                    self.log.debug("Unlinking file: " + fullFilePath);
+                    if(!e) {
+                        self.log.debug("Success! Image unlinked successfully!");
+                    } else {
+                        self.log.debug("Failed! Unlink failed.");
+                    }
+                });
 
                 let packagePaths = {};
                 let imagesPaths = [this.filepath];
 
                 if(Application.modules.imageserver) {
                     packagePaths = Application.modules.imageserver.getPaths(this, true) || {};
+                } else {
+                    self.log.debug("Imageserver module missing. Can't get file paths.");
                 }
 
                 for(let key in packagePaths) {
@@ -711,33 +717,46 @@ module.exports = class Files extends Module {
 
                     imagesPaths.push(packagePaths[key]);
 
-                    try {
-                        fs.unlink(fullFilePath);
-                    } catch (e) {
+                    fs.unlink(fullFilePath, (e) => {
+                        self.log.debug("Unlinking file: " + fullFilePath);
+                        if(!e) {
+                            self.log.debug("Success! Image unlinked successfully!");
+                        } else {
+                            self.log.debug("Failed! Unlink failed.");
+                        }
+                    });
+                }
 
-                    }
+                if(imagesPaths.length <= 1) {
+                    self.log.debug("Warning! No generated paths for this image.");
                 }
 
                 if (self.distributor) {
 
                     for(let i = 0; i<imagesPaths.length; i++) {
                         self.distributor.removeFile(imagesPaths[i]).then(() => {
-                            self.log.info("Removed file "+ imagePath +" on all distribute servers!");
+                            self.log.info("Removed file "+ imagesPaths[i] +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
+                            self.log.debug("Removing file "+ imagesPaths[i] +" on server failed.")
                         });
                     }
+                } else {
+                    self.log.debug("Distributor missing. Can't remove file on servers.");
                 }
 
                 if (self.distributorGenerated) {
 
                     for(let i = 0; i<imagesPaths.length; i++) {
                         self.distributorGenerated.removeFile(imagesPaths[i]).then(() => {
-                            self.log.info("Removed file "+ imagePath +" on all distribute servers!");
+                            self.log.info("Removed file "+ imagesPaths[i] +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
+                            self.log.debug("Removing file "+ imagesPaths[i] +" on server failed.")
                         });
                     }
+                } else {
+                    self.log.debug("Distributor generated missing. Can't remove file on servers.");
                 }
 
                 next();
@@ -782,12 +801,13 @@ module.exports = class Files extends Module {
                 return Promise.map(docs, (doc) => {
                     return doc.getLinked().then((links) => {
                         if (!links) {
+                            this.log.debug("Removing documment " + doc._id);
                             return doc.remove();
                         }
                     });
                 }).then(() => {
                     if (docs.length < limit) {
-                        return;
+                        return resolve();
                     }
 
                     page++;
