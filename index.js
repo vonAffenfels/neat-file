@@ -706,22 +706,22 @@ module.exports = class Files extends Module {
                 }
 
                 for(let key in packagePaths) {
-                    imagesPaths.push(packagePaths[key]);
-                    if(Application.modules.imageserver) {
-                        let fullFilePath = Application.config.root_path + packagePaths[key];
-                        fullFilePath = path.resolve(fullFilePath);
-                        try {
-                            fs.unlink(fullFilePath);
-                        } catch (e) {
+                    let fullFilePath = Application.config.root_path + packagePaths[key];
+                    fullFilePath = path.resolve(fullFilePath);
 
-                        }
+                    imagesPaths.push(packagePaths[key]);
+
+                    try {
+                        fs.unlink(fullFilePath);
+                    } catch (e) {
+
                     }
                 }
 
                 if (self.distributor) {
 
                     for(let i = 0; i<imagesPaths.length; i++) {
-                        self.distributor.removeFile(imagePath).then(() => {
+                        self.distributor.removeFile(imagesPaths[i]).then(() => {
                             self.log.info("Removed file "+ imagePath +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
@@ -732,7 +732,7 @@ module.exports = class Files extends Module {
                 if (self.distributorGenerated) {
 
                     for(let i = 0; i<imagesPaths.length; i++) {
-                        self.distributorGenerated.removeFile(imagePath).then(() => {
+                        self.distributorGenerated.removeFile(imagesPaths[i]).then(() => {
                             self.log.info("Removed file "+ imagePath +" on all distribute servers!");
                         }).catch((e) => {
                             // catch error, ignore failure
