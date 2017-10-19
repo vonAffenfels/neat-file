@@ -733,28 +733,26 @@ module.exports = class Files extends Module {
 
                 if (self.distributor) {
 
-                    for(let i = 0; i<imagesPaths.length; i++) {
-                        self.distributor.removeFile(imagesPaths[i]).then(() => {
-                            self.log.info("Removed file "+ imagesPaths[i] +" on all distribute servers!");
-                        }).catch((e) => {
-                            // catch error, ignore failure
-                            self.log.debug("Removing file "+ imagesPaths[i] +" on server failed.")
-                        });
-                    }
+                    self.distributor.removeFiles(imagesPaths, 1).then(() => {
+                        self.log.info("Removed "+imagesPaths.length+" generated images on all distribute servers!");
+                    }).catch((e) => {
+                        // catch error, ignore failure
+                        self.log.debug("Removing files "+ imagesPaths[0] +" on server failed.")
+                    });
+
                 } else {
                     self.log.debug("Distributor missing. Can't remove file on servers.");
                 }
 
                 if (self.distributorGenerated) {
 
-                    for(let i = 0; i<imagesPaths.length; i++) {
-                        self.distributorGenerated.removeFile(imagesPaths[i]).then(() => {
-                            self.log.info("Removed file "+ imagesPaths[i] +" on all distribute servers!");
-                        }).catch((e) => {
-                            // catch error, ignore failure
-                            self.log.debug("Removing file "+ imagesPaths[i] +" on server failed.")
-                        });
-                    }
+                    self.distributorGenerated.removeFiles(imagesPaths, 1).then(() => {
+                        self.log.info("Removed "+imagesPaths.length+" generated images on all distribute servers!");
+                    }).catch((e) => {
+                        // catch error, ignore failure
+                        self.log.debug("Removing files "+ imagesPaths[0] +" on server failed.")
+                    });
+
                 } else {
                     self.log.debug("Distributor generated missing. Can't remove file on servers.");
                 }

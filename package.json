@@ -1,6 +1,6 @@
 {
   "name": "neat-file",
-  "version": "1.0.52",
+  "version": "1.0.53",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "author": "Dominik Kienzler <d.kienzler@dominik-kienzler.de>",
   "license": "ISC",
   "dependencies": {
-    "distribute-files": "^1.1.24",
+    "distribute-files": "^1.1.32",
     "mime": "^1.3.4",
     "mkdirp": "^0.5.1",
     "multer": "^1.3.0"
