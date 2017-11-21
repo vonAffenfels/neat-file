@@ -691,73 +691,14 @@ module.exports = class Files extends Module {
             });
 
             schema.pre("remove", function (next) {
-                let fullFilePath = Application.config.root_path + this.filepath;
-
-                fs.unlink(fullFilePath, (e) => {
-                    self.log.debug("Unlinking file: " + fullFilePath);
-                    if(!e) {
-                        self.log.debug("Success! Image unlinked successfully!");
-                    } else {
-                        self.log.debug("Failed! Unlink failed.");
-                    }
+                self.removeLocalAndDistributed(this).then(() => {
+                    self.log.info("removeLocalAndDistributed DONE!");
+                    next();
+                }).catch((e) => {
+                    self.log.info("removeLocalAndDistributed DONE with ERROR!");
+                    self.log.debug(e);
+                    next();
                 });
-
-                let packagePaths = {};
-                let imagesPaths = [this.filepath];
-
-                if(Application.modules.imageserver) {
-                    packagePaths = Application.modules.imageserver.getPaths(this, true) || {};
-                } else {
-                    self.log.debug("Imageserver module missing. Can't get file paths.");
-                }
-
-                for(let key in packagePaths) {
-                    let fullFilePath = Application.config.root_path + packagePaths[key];
-                    fullFilePath = path.resolve(fullFilePath);
-
-                    imagesPaths.push(packagePaths[key]);
-
-                    fs.unlink(fullFilePath, (e) => {
-                        self.log.debug("Unlinking file: " + fullFilePath);
-                        if(!e) {
-                            self.log.debug("Success! Image unlinked successfully!");
-                        } else {
-                            self.log.debug("Failed! Unlink failed.");
-                        }
-                    });
-                }
-
-                if(imagesPaths.length <= 1) {
-                    self.log.debug("Warning! No generated paths for this image.");
-                }
-
-                if (self.distributor) {
-
-                    self.distributor.removeFiles(imagesPaths, 1).then(() => {
-                        self.log.info("Removed "+imagesPaths.length+" generated images on all distribute servers!");
-                    }).catch((e) => {
-                        // catch error, ignore failure
-                        self.log.debug("Removing files "+ imagesPaths[0] +" on server failed.")
-                    });
-
-                } else {
-                    self.log.debug("Distributor missing. Can't remove file on servers.");
-                }
-
-                if (self.distributorGenerated) {
-
-                    self.distributorGenerated.removeFiles(imagesPaths, 1).then(() => {
-                        self.log.info("Removed "+imagesPaths.length+" generated images on all distribute servers!");
-                    }).catch((e) => {
-                        // catch error, ignore failure
-                        self.log.debug("Removing files "+ imagesPaths[0] +" on server failed.")
-                    });
-
-                } else {
-                    self.log.debug("Distributor generated missing. Can't remove file on servers.");
-                }
-
-                next();
             });
         } else {
             /**
@@ -799,7 +740,7 @@ module.exports = class Files extends Module {
                 return Promise.map(docs, (doc) => {
                     return doc.getLinked().then((links) => {
                         if (!links) {
-                            this.log.debug("Removing documment " + doc._id);
+                            this.log.debug("Removing document " + doc._id);
                             return doc.remove();
                         }
                     });
@@ -811,6 +752,92 @@ module.exports = class Files extends Module {
                     page++;
                     return this.cleanup(page, limit);
                 }, reject);
+            });
+        });
+    }
+
+    removeLocalAndDistributed(doc) {
+        return new Promise((resolve, reject) => {
+            let tasks = [];
+
+            let packagePaths = {};
+            let imagePaths = [];
+            let fullFilePathsLocal = [];
+
+            if(Application.modules.imageserver) {
+                packagePaths = Application.modules.imageserver.getPaths(doc, true) || {};
+            }
+
+            packagePaths["localFile" + doc._id] = doc.filepath;
+
+            // Collect paths
+            for(let key in packagePaths) {
+
+                let fullFilePath = Application.config.root_path + packagePaths[key];
+                fullFilePath = path.resolve(fullFilePath);
+
+                imagePaths.push(packagePaths[key]);
+                fullFilePathsLocal.push(fullFilePath);
+            }
+
+            // Task 1 - Local files
+            tasks.push((() => {
+                return new Promise((res, rej) => {
+                    return Promise.mapSeries(fullFilePathsLocal, (filePathLocal) => {
+                        return new Promise((reso, reje) => {
+                            fs.unlink(filePathLocal, (e) => {
+                                this.log.debug("Unlinking local file: " + filePathLocal);
+                                if (!e) {
+                                    this.log.debug("Success! Local file unlinked successfully!");
+                                } else {
+                                    this.log.debug("Failed! Unlink of local file failed. ( " + e.toString() + " )");
+                                }
+                                return reso();
+                            });
+                        })
+                    }).then(() => {
+                        return res();
+                    }).catch((e) => {
+                        return res();
+                    });
+                });
+            })());
+
+
+            if (this.distributor) {
+                tasks.push((() => {
+                    return new Promise((res, rej) => {
+                        return this.distributor.removeFiles(imagePaths, 1).then(() => {
+                            this.log.info("Removed "+imagePaths.length+" generated images on all distribute servers!");
+                            return res();
+                        }).catch((e) => {
+                            // catch error, ignore failure
+                            this.log.debug("Removing files on server failed: " + imagePaths.join(" , "));
+                            return res();
+                        });
+                    });
+                })());
+            }
+
+            if (this.distributorGenerated) {
+                tasks.push((() => {
+                    return new Promise((res, rej) => {
+                        return this.distributorGenerated.removeFiles(imagePaths, 1).then(() => {
+                            this.log.info("Removed "+imagePaths.length+" generated images on all distribute servers!");
+                            return res();
+                        }).catch((e) => {
+                            // catch error, ignore failure
+                            this.log.debug("Removing files on server failed: " + imagePaths.join(" , "));
+                            return res();
+                        });
+                    });
+                })());
+            }
+
+            return Promise.all(tasks).then(() => {
+                return resolve();
+            }).catch((e) => {
+                return reject(e);
             });
         });
     }
