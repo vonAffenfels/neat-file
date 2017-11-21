@@ -739,10 +739,16 @@ module.exports = class Files extends Module {
             return model.find().sort({_id: -1}).limit(limit).skip(page * limit).then((docs) => {
                 return Promise.map(docs, (doc) => {
                     return doc.getLinked().then((links) => {
-                        if (!links) {
+                        return new Promise((res, rej) => {
+                            if (links) {
+                                return res();
+                            }
+
                             this.log.debug("Removing document " + doc._id);
-                            return doc.remove();
-                        }
+                            doc.remove(() => {
+                                return res();
+                            });
+                        });
                     });
                 }).then(() => {
                     if (docs.length < limit) {
