@@ -691,12 +691,22 @@ module.exports = class Files extends Module {
             });
 
             schema.pre("remove", function (next) {
+
+                let measureTime = Date.now();
+
+                let timeout = setTimeout(() => {
+                    self.log.info("WARNING: Task removeLocalAndDistributed timed out! Removing document...");
+                    return next();
+                }, 30000);
+
                 self.removeLocalAndDistributed(this).then(() => {
-                    self.log.info("removeLocalAndDistributed DONE!");
+                    clearTimeout(timeout);
+                    self.log.info("SUCCESS: removeLocalAndDistributed DONE! ("+ parseInt(Date.now() - measureTime) +" ms)");
                     next();
                 }).catch((e) => {
-                    self.log.info("removeLocalAndDistributed DONE with ERROR!");
-                    self.log.debug(e);
+                    clearTimeout(timeout);
+                    self.log.info("ERROR: removeLocalAndDistributed! ("+ parseInt(Date.now() - measureTime) +" ms)");
+                    console.log(e);
                     next();
                 });
             });
@@ -743,19 +753,21 @@ module.exports = class Files extends Module {
                             if (links) {
                                 return res();
                             }
-
                             this.log.debug("Removing document " + doc._id);
                             doc.remove(() => {
+                                this.log.info("SUCCESS: Removed all files and document " + doc._id);
                                 return res();
                             });
                         });
                     });
                 }).then(() => {
                     if (docs.length < limit) {
+                        this.log.info("Script finished successfully!");
                         return resolve();
                     }
 
                     page++;
+                    this.log.info("Processing next page... ("+page+")");
                     return this.cleanup(page, limit);
                 }, reject);
             });
