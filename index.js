@@ -208,7 +208,7 @@ module.exports = class Files extends Module {
         return Promise.all(queues);
     }
 
-    saveFileFromBase64(string) {
+    saveFileFromBase64(string, userId) {
         return new Promise((resolve, reject) => {
             let decoded = this.decodeBase64(string);
             let model = Application.modules[this.config.dbModuleName].getModel("file");
@@ -216,6 +216,7 @@ module.exports = class Files extends Module {
             let mimetype = decoded.type;
             let doc = new model({
                 name: name,
+                _createdBy: userId,
                 originalname: name,
                 type: this.getTypeFromMimeType(mimetype),
                 filesize: this.getFileSizeFromBase64(string),
@@ -344,11 +345,11 @@ module.exports = class Files extends Module {
                     var value = properties[field];
 
                     if ([
-                            "originalname",
-                            "type",
-                            "mimetype",
-                            "extension"
-                        ].indexOf(field) !== -1) {
+                        "originalname",
+                        "type",
+                        "mimetype",
+                        "extension"
+                    ].indexOf(field) !== -1) {
                         continue;
                     }
 
@@ -701,11 +702,11 @@ module.exports = class Files extends Module {
 
                 self.removeLocalAndDistributed(this).then(() => {
                     clearTimeout(timeout);
-                    self.log.info("SUCCESS: removeLocalAndDistributed DONE! ("+ parseInt(Date.now() - measureTime) +" ms)");
+                    self.log.info("SUCCESS: removeLocalAndDistributed DONE! (" + parseInt(Date.now() - measureTime) + " ms)");
                     next();
                 }).catch((e) => {
                     clearTimeout(timeout);
-                    self.log.info("ERROR: removeLocalAndDistributed! ("+ parseInt(Date.now() - measureTime) +" ms)");
+                    self.log.info("ERROR: removeLocalAndDistributed! (" + parseInt(Date.now() - measureTime) + " ms)");
                     console.log(e);
                     next();
                 });
@@ -767,7 +768,7 @@ module.exports = class Files extends Module {
                     }
 
                     page++;
-                    this.log.info("Processing next page... ("+page+")");
+                    this.log.info("Processing next page... (" + page + ")");
                     return this.cleanup(page, limit);
                 }, reject);
             });
@@ -782,14 +783,14 @@ module.exports = class Files extends Module {
             let imagePaths = [];
             let fullFilePathsLocal = [];
 
-            if(Application.modules.imageserver) {
+            if (Application.modules.imageserver) {
                 packagePaths = Application.modules.imageserver.getPaths(doc, true) || {};
             }
 
             packagePaths["localFile" + doc._id] = doc.filepath;
 
             // Collect paths
-            for(let key in packagePaths) {
+            for (let key in packagePaths) {
 
                 let fullFilePath = Application.config.root_path + packagePaths[key];
                 fullFilePath = path.resolve(fullFilePath);
@@ -826,7 +827,7 @@ module.exports = class Files extends Module {
                 tasks.push((() => {
                     return new Promise((res, rej) => {
                         return this.distributor.removeFiles(imagePaths, 1).then(() => {
-                            this.log.info("Removed "+imagePaths.length+" generated images on all distribute servers!");
+                            this.log.info("Removed " + imagePaths.length + " generated images on all distribute servers!");
                             return res();
                         }).catch((e) => {
                             // catch error, ignore failure
@@ -841,7 +842,7 @@ module.exports = class Files extends Module {
                 tasks.push((() => {
                     return new Promise((res, rej) => {
                         return this.distributorGenerated.removeFiles(imagePaths, 1).then(() => {
-                            this.log.info("Removed "+imagePaths.length+" generated images on all distribute servers!");
+                            this.log.info("Removed " + imagePaths.length + " generated images on all distribute servers!");
                             return res();
                         }).catch((e) => {
                             // catch error, ignore failure
