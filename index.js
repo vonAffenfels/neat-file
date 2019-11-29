@@ -30,9 +30,9 @@ module.exports = class Files extends Module {
             uploadRequiresPermission: true,
             debug: false,
             limits: {
-                fileSize: 5
-            }
-        }
+                fileSize: 5,
+            },
+        };
     }
 
     /**
@@ -53,8 +53,8 @@ module.exports = class Files extends Module {
             let uploader = multer({
                 dest: this.uploadTarget,
                 limits: {
-                    fileSize: this.config.limits.fileSize * 1024 * 1024
-                }
+                    fileSize: this.config.limits.fileSize * 1024 * 1024,
+                },
             });
 
             // Setup distributor for file distribution if available / required
@@ -64,13 +64,13 @@ module.exports = class Files extends Module {
                         debug: this.config.distributeDebug || false,
                         root: Application.config.root_path,
                         errordir: this.config.distributeConfig[this.config.distributeKey].errordir,
-                        servers: this.config.distributeConfig[this.config.distributeKey].servers
+                        servers: this.config.distributeConfig[this.config.distributeKey].servers,
                     });
                     this.distributorGenerated = new Distributor({
                         debug: this.config.distributeDebug || false,
                         root: Application.config.root_path,
                         errordir: this.config.distributeConfig[this.config.distributeKeyGenerated].errordir,
-                        servers: this.config.distributeConfig[this.config.distributeKeyGenerated].servers
+                        servers: this.config.distributeConfig[this.config.distributeKeyGenerated].servers,
                     });
                 } else {
                     let conf = null;
@@ -91,13 +91,13 @@ module.exports = class Files extends Module {
                             debug: this.config.distributeDebug || false,
                             root: Application.config.root_path,
                             servers: conf[this.config.distributeKey].servers,
-                            errordir: conf[this.config.distributeKey].errordir
+                            errordir: conf[this.config.distributeKey].errordir,
                         });
                         this.distributorGenerated = new Distributor({
                             debug: this.config.distributeDebug || false,
                             root: Application.config.root_path,
                             servers: conf[this.config.distributeKeyGenerated].servers,
-                            errordir: conf[this.config.distributeKeyGenerated].errordir
+                            errordir: conf[this.config.distributeKeyGenerated].errordir,
                         });
                     }
                 }
@@ -221,7 +221,7 @@ module.exports = class Files extends Module {
                 type: this.getTypeFromMimeType(mimetype),
                 filesize: this.getFileSizeFromBase64(string),
                 mimetype: mimetype,
-                extension: this.getExtensionFromMimeType(mimetype)
+                extension: this.getExtensionFromMimeType(mimetype),
             });
 
             doc.save().then(() => {
@@ -244,7 +244,7 @@ module.exports = class Files extends Module {
                 } else {
                     return resolve(doc);
                 }
-            }, reject)
+            }, reject);
         });
     }
 
@@ -261,7 +261,7 @@ module.exports = class Files extends Module {
                 type: this.getTypeFromMimeType(mimetype),
                 filesize: stats.size,
                 mimetype: mimetype,
-                extension: this.getExtensionFromMimeType(mimetype)
+                extension: this.getExtensionFromMimeType(mimetype),
             });
 
             doc.save().then(() => {
@@ -284,7 +284,7 @@ module.exports = class Files extends Module {
                 } else {
                     return resolve(doc);
                 }
-            }, reject)
+            }, reject);
         });
     }
 
@@ -310,7 +310,7 @@ module.exports = class Files extends Module {
                         type: this.getTypeFromMimeType(uploadedFileObj.mimetype),
                         filesize: uploadedFileObj.size,
                         mimetype: uploadedFileObj.mimetype,
-                        extension: this.getExtensionFromMimeType(uploadedFileObj.mimetype)
+                        extension: this.getExtensionFromMimeType(uploadedFileObj.mimetype),
                     }));
                 } catch (e) {
                     this.log.error(e);
@@ -322,7 +322,7 @@ module.exports = class Files extends Module {
                 getFileObjectPromise = new Promise((resolve, reject) => {
                     try {
                         return model.findOne({
-                            _id: req.body._id
+                            _id: req.body._id,
                         }).then((doc) => {
 
                             if (!doc) {
@@ -348,7 +348,7 @@ module.exports = class Files extends Module {
                         "originalname",
                         "type",
                         "mimetype",
-                        "extension"
+                        "extension",
                     ].indexOf(field) !== -1) {
                         continue;
                     }
@@ -448,7 +448,7 @@ module.exports = class Files extends Module {
             var model = Application.modules[this.config.dbModuleName].getModel("file");
             var requestUrl = url;
             if (typeof url == 'object') {
-                requestUrl = url.url
+                requestUrl = url.url;
             }
 
             newFile = newFile || new model();
@@ -541,7 +541,7 @@ module.exports = class Files extends Module {
                         }
                     });
                 }, (err) => {
-                    reject(new Error(err.toString()))
+                    reject(new Error(err.toString()));
                 });
             });
 
@@ -569,7 +569,7 @@ module.exports = class Files extends Module {
 
             this.log.debug("Copying file to temp path " + targetTempPath);
             try {
-                fs.writeFileSync(targetTempPath, fs.readFileSync(filePath))
+                fs.writeFileSync(targetTempPath, fs.readFileSync(filePath));
             } catch (e) {
                 reject(e);
             }
@@ -629,7 +629,7 @@ module.exports = class Files extends Module {
                     }
                 });
             }, (err) => {
-                reject(new Error(err.toString()))
+                reject(new Error(err.toString()));
             });
 
         });
@@ -737,7 +737,7 @@ module.exports = class Files extends Module {
                         return resolve(files);
                     });
                 });
-            }
+            };
         }
     }
 
@@ -813,7 +813,7 @@ module.exports = class Files extends Module {
                                 }
                                 return reso();
                             });
-                        })
+                        });
                     }).then(() => {
                         return res();
                     }).catch((e) => {
@@ -827,7 +827,7 @@ module.exports = class Files extends Module {
                 tasks.push((() => {
                     return new Promise((res, rej) => {
                         return this.distributor.removeFiles(imagePaths, 1).then(() => {
-                            this.log.info("Removed " + imagePaths.length + " generated images on all distribute servers!");
+                            this.log.info("Removed " + imagePaths.length + " original images on all distribute servers!");
                             return res();
                         }).catch((e) => {
                             // catch error, ignore failure
@@ -846,7 +846,7 @@ module.exports = class Files extends Module {
                             return res();
                         }).catch((e) => {
                             // catch error, ignore failure
-                            this.log.debug("Removing files on server failed: " + imagePaths.join(" , "));
+                            this.log.debug("Removing generated files on server failed: " + imagePaths.join(" , "));
                             return res();
                         });
                     });
