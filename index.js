@@ -208,7 +208,7 @@ module.exports = class Files extends Module {
         return Promise.all(queues);
     }
 
-    saveFileFromBase64(string, userId) {
+    saveFileFromBase64(string, userId, username) {
         return new Promise((resolve, reject) => {
             let decoded = this.decodeBase64(string);
             let model = Application.modules[this.config.dbModuleName].getModel("file");
@@ -217,6 +217,7 @@ module.exports = class Files extends Module {
             let doc = new model({
                 name: name,
                 _createdBy: userId,
+                credit: username,
                 originalname: name,
                 type: this.getTypeFromMimeType(mimetype),
                 filesize: this.getFileSizeFromBase64(string),
