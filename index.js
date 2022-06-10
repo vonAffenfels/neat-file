@@ -50,12 +50,16 @@ module.exports = class Files extends Module {
             this.fileDir = Application.config.root_path + this.config.fileDir;
 
             // setup multer
-            let uploader = multer({
-                dest: this.uploadTarget,
-                limits: {
-                    fileSize: this.config.limits.fileSize * 1024 * 1024,
-                },
-            });
+            try {
+                let uploader = multer({
+                    dest: this.uploadTarget,
+                    limits: {
+                        fileSize: this.config.limits.fileSize * 1024 * 1024,
+                    },
+                });
+            } catch (e) {
+                this.log.warn(e);
+            }
 
             // Setup distributor for file distribution if available / required
             if (this.config.distributeConfig) {
@@ -104,8 +108,12 @@ module.exports = class Files extends Module {
             }
 
             // create any missing directories (sync because its startup after all)
-            mkdirp.sync(this.uploadTarget);
-            mkdirp.sync(this.fileDir);
+            try {
+                mkdirp.sync(this.uploadTarget);
+                mkdirp.sync(this.fileDir);
+            } catch (e) {
+                this.log.warn(e);
+            }
 
             /*
              Routes
