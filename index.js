@@ -50,8 +50,9 @@ module.exports = class Files extends Module {
             this.fileDir = Application.config.root_path + this.config.fileDir;
 
             // setup multer
+            let uploader = null;
             try {
-                let uploader = multer({
+                uploader = multer({
                     dest: this.uploadTarget,
                     limits: {
                         fileSize: this.config.limits.fileSize * 1024 * 1024,
